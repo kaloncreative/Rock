@@ -1,0 +1,13 @@
+{
+    "name": "Matching Tool",
+    "version": "1.0.0",
+    "include": [
+        "Bin/Team.Passion.OscMatching.dll",
+        "Plugins/team_passion/OscMatching/**/*"
+    ],
+    "exclude": [
+        "Plugins/**/*.js.map"
+    ],
+    "delete": [
+    ]
+}

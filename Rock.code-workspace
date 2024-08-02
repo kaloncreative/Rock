@@ -49,6 +49,30 @@
 					"!**/node_modules/**",
 					"!**/scripts/**"
 				]
+			},
+			{
+				"name": "Debug Plugins",
+				"request": "launch",
+				"port": 9222,
+				"type": "chrome",
+				"url": "http://localhost:6229",
+				"webRoot": "${workspaceFolder:Rock.JavaScript.Obsidian.Plugins}/dist/",
+				"resolveSourceMapLocations": [
+					"!**/node_modules/**",
+					"!**/scripts/**"
+				]
+			},
+			{
+				"name": "Debug Plugins (Attach to existing Chrome)",
+				"request": "attach",
+				"port": 9222,
+				"type": "chrome",
+				"urlFilter": "http://localhost:6229*",
+				"webRoot": "${workspaceFolder:Rock.JavaScript.Obsidian.Plugins}/dist/",
+				"resolveSourceMapLocations": [
+					"!**/node_modules/**",
+					"!**/scripts/**"
+				]
 			}
 		]
 	},
@@ -65,6 +89,9 @@
 		},
 		{
 			"path": "Rock.JavaScript.Obsidian.Blocks"
+		},
+		{
+			"path": "Rock.JavaScript.Obsidian.Plugins"
 		}
 	],
 	"settings": {
@@ -148,6 +175,23 @@
 				}
 			},
 			{
+				"label": "Build Obsidian Plugins",
+				"type": "shell",
+				"command": "npm run build-fast",
+				"presentation": {
+					"showReuseMessage": false,
+					"clear": true,
+					"group": "build"
+				},
+				"group": {
+					"kind": "build",
+					"isDefault": false
+				},
+				"options": {
+					"cwd": "../Rock.JavaScript.Obsidian.Plugins"
+				}
+			},
+			{
 				"label": "Build All Obsidian",
 				"group": {
 					"kind": "build",
@@ -156,7 +200,8 @@
 				"dependsOrder": "sequence",
 				"dependsOn": [
 					"Build Obsidian Components",
-					"Build Obsidian Blocks"
+					"Build Obsidian Blocks",
+					"Build Obsidian Plugins"
 				]
 			},
 			{
@@ -204,13 +249,36 @@
 				}
 			},
 			{
+				"label": "Watch Obsidian Plugins",
+				"type": "shell",
+				"command": "npm run --silent watch",
+				"presentation": {
+					"showReuseMessage": false,
+					"clear": true,
+					"echo": false,
+					"panel": "dedicated"
+				},
+				"options": {
+					"cwd": "${workspaceFolder:Rock.JavaScript.Obsidian.Plugins}"
+				},
+				"isBackground": true,
+				"problemMatcher": {
+					"base": "$vite",
+					"background": {
+						"beginsPattern": "^rollup v",
+						"endsPattern": "waiting for changes\\.\\.\\.$"
+					}
+				}
+			},
+			{
 				"label": "Watch All Obsidian",
 				"dependsOn": [
 					"Watch Obsidian Components",
-					"Watch Obsidian Blocks"
+					"Watch Obsidian Blocks",
+					"Watch Obsidian Plugins"
 				],
 				"isBackground": true,
-				"detail": "Build both Obsidian projects, watch file system for changes and rebuild.",
+				"detail": "Build all Obsidian projects, watch file system for changes and rebuild.",
 				"problemMatcher": []
 			}
 		]

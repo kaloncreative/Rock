@@ -1,0 +1,900 @@
+<template>
+    <Block title="OSC Matching Tool">
+        <NotificationBox v-if="errorMessage" alertType="danger">{{ errorMessage }}</NotificationBox>
+
+        <div v-if="config.isInitialConfigSet">
+            <div v-if="selectedProject">
+                <div class="mb-5">
+                    <RockButton type="button" @click="onGoBackClick"><i class="fa fa-angle-left"></i> Go Back</RockButton>
+                </div>
+                <div class="row mb-5">
+                    <div class="col-md-6 col-12">
+                        <h2 class="m-0">{{selectedProject.name}}</h2>
+                        <h3 class="mt-3">{{selectedProject.partner}}</h3>
+                    </div>
+                    <div class="col-md-6 col-12">
+                        <div class="shadow bg-light rounded p-3">
+                            <div class="row">
+                                <div class="col-sm-3 col-12">
+                                    <small class="font-weight-bold text-muted">Gender</small>
+                                    <h5 class="mt-2 text-primary">{{selectedProject.gender != Gender.Unknown ? selectedProject.genderString : 'Not Specified'}}</h5>
+                                </div>
+                                <div class="col-sm-3 col-12">
+                                    <small class="font-weight-bold text-muted">Location</small>
+                                    <h5 class="mt-2 text-primary">{{selectedProject.location ?? 'Not Provided'}}</h5>
+                                </div>
+                                <div class="col-sm-3 col-12">
+                                    <small class="font-weight-bold text-muted">Date</small>
+                                    <h5 class="mt-2 text-primary">{{selectedProject.fullDate}}</h5>
+                                </div>
+                                <div class="col-sm-3 col-12">
+                                    <small class="font-weight-bold text-muted">Time</small>
+                                    <h5 class="mt-2 text-primary">{{selectedProject.time}}</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="grid-obsidian grid-bordered grid-striped">
+                        <div class="grid-heading">
+                            <div class="grid-column-heading">
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Name</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Gender</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Location</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 20%;"><span class="grid-column-title stretched-link">Day</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Time</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 5%;"><span class="grid-column-title stretched-link">Projects</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 5%;"><span class="grid-column-title stretched-link">Match Percentage</span></div>
+                                <div class="grid-column-header" style="flex: 0 0 110px;"></div>
+                            </div>
+                        </div>
+                        <div class="grid-body">
+                            <div style="height: 0px;"></div>
+                            <div class="grid-row grid-row-odd">
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;"></div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span class="match-item match">
+                                        {{selectedProject.gender != Gender.Unknown ? selectedProject.genderString : 'Not Specified'}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span class="match-item match">
+                                        {{selectedProject.location ?? 'Not Provided'}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 20%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Monday', selectedProject?.day)">M</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Tuesday', selectedProject?.day)">T</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Wednesday', selectedProject?.day)">W</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Thursday', selectedProject?.day)">T</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Friday', selectedProject?.day)">F</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Saturday', selectedProject?.day)">S</span>
+                                        <span :class="getDayMatchClass([selectedProject?.day ?? ''], 'Sunday', selectedProject?.day)">S</span>
+                                    </div>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span v-html="getTimeOfDayIcon('Morning')" :class="getTimeMatchClass(selectedProject?.timeOfDay, 'Morning', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Morning Session: 8am - 12pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Afternoon')" :class="getTimeMatchClass(selectedProject?.timeOfDay, 'Afternoon', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Afternoon Session: 12pm - 4pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Evening')" :class="getTimeMatchClass(selectedProject?.timeOfDay, 'Evening', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Evening Session: 4pm - 9pm"></span>
+                                    </div>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 5%;"></div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 5%;"></div>
+                                <div class="grid-cell" role="gridcell" style="flex: 0 0 110px;"></div>
+                            </div>
+                            <div style="height: 0px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="selectedOsc" class="mb-4">
+                    <h6>SELECTED PERSON</h6>
+                    <div class="grid-obsidian grid-bordered grid-striped">
+                        <div class="grid-body">
+                            <div style="height: 0px;"></div>
+                            <div class="grid-row grid-row-odd">
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span data-toggle="tooltip" :title="selectedOsc.extraInfo ?? undefined"><i v-if="selectedOsc.extraInfo" class="fa fa-exclamation-circle mr-2"></i>{{ selectedOsc.name }}</span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span :class="'match-item' + (selectedProject.gender == Gender.Unknown || selectedOsc.gender == selectedProject.gender ? ' match' : '')">
+                                        {{selectedOsc.gender != Gender.Unknown ? selectedOsc.genderString : 'Not Specified'}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span v-if="selectedOsc.location" :class="'match-item' + (!selectedProject.location || selectedOsc.location == selectedProject.location ? ' match' : '')">
+                                        {{selectedOsc.location}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 20%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Monday', selectedProject?.day)">M</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Tuesday', selectedProject?.day)">T</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Wednesday', selectedProject?.day)">W</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Thursday', selectedProject?.day)">T</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Friday', selectedProject?.day)">F</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Saturday', selectedProject?.day)">S</span>
+                                        <span :class="getDayMatchClass(selectedOsc?.dayPreference, 'Sunday', selectedProject?.day)">S</span>
+                                    </div>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span v-html="getTimeOfDayIcon('Morning')" :class="getTimeMatchClass(selectedOsc.timePreference, 'Morning', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Morning Session: 8am - 12pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Afternoon')" :class="getTimeMatchClass(selectedOsc.timePreference, 'Afternoon', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Afternoon Session: 12pm - 4pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Evening')" :class="getTimeMatchClass(selectedOsc.timePreference, 'Evening', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Evening Session: 4pm - 9pm"></span>
+                                    </div>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 5%;">
+                                    <span
+                                        :class="selectedOsc.currentProjects ? 'text-primary': ''"
+                                        :role="selectedOsc.currentProjects ? 'button' : undefined"
+                                        @click="onOscProjectsClick(selectedOsc?.id ?? 0, selectedOsc?.currentProjects ?? 0)">
+                                        {{`${selectedOsc.currentProjects}/${(selectedOsc.maxProjects < 0 ? '-' : selectedOsc.maxProjects)}`}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 5%;">
+                                    {{selectedOsc.formattedMatchPercentage}}
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 0 0 110px;"></div>
+                            </div>
+                            <div style="height: 0px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <Grid v-if="unnasignedProjectsSelected"
+                    :definition="config.onSiteCoordinatorsGridDefinition ?? undefined"
+                    :data="oscsGridDataSource"
+                    keyField="id"
+                    itemTerm="OSCs"
+                    stickyHeader>
+                    <TextColumn name="name"
+                        field="name"
+                        title="Name">
+                        <template #format="{ row }">
+                            <span data-toggle="tooltip" :title="row.extraInfo"><i v-if="row.extraInfo" class="fa fa-exclamation-circle mr-2"></i>{{ row.name }}</span>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="gender"
+                        field="gender"
+                        title="Gender">
+                        <template #format="{ row }">
+                            <span :class="'match-item' + (selectedProject.gender == Gender.Unknown || row.gender == selectedProject.gender ? ' match' : '')">{{ row.gender != Gender.Unknown ? row.genderString : 'Not Specified' }}</span>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="location"
+                        field="location"
+                        title="Location">
+                        <template #format="{ row }">
+                            <span v-if="row.location" :class="'match-item' + (!selectedProject.location || row.location == selectedProject.location ? ' match' : '')">{{ row.location }}</span>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="dayPreference"
+                        field="dayPreference"
+                        title="Day"
+                        width="20%">
+                        <template #format="{ row }">
+                            <div class="d-flex flex-column flex-lg-row">
+                                <span :class="getDayMatchClass(row.dayPreference, 'Monday', selectedProject?.day)">M</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Tuesday', selectedProject?.day)">T</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Wednesday', selectedProject?.day)">W</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Thursday', selectedProject?.day)">T</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Friday', selectedProject?.day)">F</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Saturday', selectedProject?.day)">S</span>
+                                <span :class="getDayMatchClass(row.dayPreference, 'Sunday', selectedProject?.day)">S</span>
+                            </div>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="timePreference"
+                        field="timePreference"
+                        title="Time">
+                        <template #format="{ row }">
+                            <div class="d-flex flex-column flex-lg-row">
+                                <span v-html="getTimeOfDayIcon('Morning')" :class="getTimeMatchClass(row.timePreference, 'Morning', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Morning Session: 8am - 12pm"></span>
+                                <span v-html="getTimeOfDayIcon('Afternoon')" :class="getTimeMatchClass(row.timePreference, 'Afternoon', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Afternoon Session: 12pm - 4pm"></span>
+                                <span v-html="getTimeOfDayIcon('Evening')" :class="getTimeMatchClass(row.timePreference, 'Evening', selectedProject?.timeOfDay)" data-toggle="tooltip" title="Evening Session: 4pm - 9pm"></span>
+                            </div>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="currentProjects"
+                        field="currentProjects"
+                        title="Projects"
+                        width="5%">
+                        <template #format="{ row }">
+                            <span
+                                :class="row.currentProjects ? 'text-primary': ''"
+                                :role="row.currentProjects ? 'button' : undefined"
+                                @click="onOscProjectsClick(row.id, row.currentProjects)">
+                                {{ `${row.currentProjects}/${(row.maxProjects < 0 ? '-' : row.maxProjects)}` }}
+                            </span>
+                        </template>
+                    </TextColumn>
+
+                    <TextColumn name="matchPercentage"
+                        field="matchPercentage"
+                        title="Match Percentage"
+                        width="5%"> 
+                        <template #format="{ row }">
+                            <span>{{ row.formattedMatchPercentage }}</span>
+                        </template>
+                    </TextColumn>
+
+                    <Column name="actions" width="110">
+                        <template #format="{ row }">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <RockButton type="button" class="btn-primary btn-sm" @click="onRegularOscAssignClick(row.id)">ASSIGN</RockButton>
+                            </div>
+                        </template>
+                    </Column>
+                </Grid>
+            </div>
+            <div v-else>
+                <div class="d-flex justify-content-between mb-2">
+                    <h1>Projects</h1>
+                    <div>
+                        <div class="d-flex justify-content-end mb-2">
+                            <div>
+                                <RockButton v-if="runningOptimizations" type="button" disabled class="btn-primary d-flex">RUN OPTIMIZATION<LoadingIndicator isSmall class="ml-1" /></RockButton>
+                                <RockButton v-else type="button" class="btn-primary" @click="onRunOptimizationsClick">RUN OPTIMIZATION</RockButton>
+                            </div>
+                        </div>
+                        <p class="text-right">
+                            OSC cannot be assigned to multiple projects at the same time<br />
+                            OSC cannot be assigned to more projects than their max<br />
+                            Each project can only have 1 OSC<br />
+                            Optimizes for the highest aggregate score across all projects
+                        </p>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <RockButton type="button" :class="`mr-1 ${unnasignedProjectsSelected ? 'btn-primary' : ''}`" @click="selectUnassignedProjects">Unassigned Projects</RockButton>
+                    <RockButton type="button" :class="unnasignedProjectsSelected ? '' : 'btn-primary'" @click="selectAssignedProjects">Assigned Projects</RockButton>
+                </div>
+                <Grid v-if="unnasignedProjectsSelected" :definition="config.projectsGridDefinition ?? undefined"
+                    :data="unassignedProjectsGridDataSource"
+                    :onSelectItem="onProjectEditClick"
+                    keyField="id"
+                    itemTerm="Unassigned Project"
+                    stickyHeader>
+                    <TextColumn name="name"
+                        field="name"
+                        title="Name" />
+
+                    <TextColumn name="partner"
+                        field="partner"
+                        title="Partner" />
+
+                    <TextColumn name="location"
+                        field="location"
+                        title="Location" />
+
+                    <TextColumn name="day"
+                        field="day"
+                        title="Day" />
+
+                    <TextColumn name="time"
+                        field="time"
+                        title="Time"
+                        width="5%" />
+
+                    <TextColumn name="suggestedOscName"
+                        field="suggestedOscName"
+                        title="Suggested OSC"
+                        width="12%">
+                        <template #format="{ row }">
+                            <div v-if="row.suggestedOscId" class="d-flex justify-content-between align-items-center w-100">
+                                <span>{{ row.suggestedOscName }}</span>
+                                <div class="pl-2">
+                                    <RockButton type="button" class="btn-primary btn-sm" @click="onSuggestedOscAssignClick(row.id)">ASSIGN</RockButton>
+                                </div>
+                            </div>
+                            <span v-else class="text-danger">No Optimal Assignee</span>
+                        </template>
+                    </TextColumn>
+
+                    <Column name="actions"
+                        visiblePriority="md"
+                        width="120">
+                        <template #format="{ row }">
+                            <div class="d-flex align-items-center h-100">
+                                <RockButton type="button" class="btn-warning btn-sm">MANAGE</RockButton>
+                            </div>
+                        </template>
+                    </Column>
+                </Grid>
+                <Grid v-if="!unnasignedProjectsSelected" :definition="config.projectsGridDefinition ?? undefined"
+                    :data="assignedProjectsGridDataSource"
+                    :onSelectItem="onProjectEditClick"
+                    keyField="id"
+                    itemTerm="Assigned Project"
+                    stickyHeader>
+                    <TextColumn name="name"
+                        field="name"
+                        title="Name" />
+
+                    <TextColumn name="partner"
+                        field="partner"
+                        title="Partner" />
+
+                    <TextColumn name="location"
+                        field="location"
+                        title="Location" />
+
+                    <TextColumn name="day"
+                        field="day"
+                        title="Day" />
+
+                    <TextColumn name="time"
+                        field="time"
+                        title="Time"
+                        width="5%" />
+                    
+                    <TextColumn name="selectedOscName"
+                        field="selectedOscName"
+                        title="OSC"
+                        width="12%" />
+
+                    <Column name="actions"
+                        visiblePriority="md"
+                        width="120">
+                        <template #format="{ row }">
+                            <div class="d-flex align-items-center h-100">
+                                <RockButton type="button" class="btn-warning btn-sm">MANAGE</RockButton>
+                            </div>
+                        </template>
+                    </Column>
+                </Grid>
+                <div v-if="excludedOnSiteCoordinators && excludedOnSiteCoordinators.length" class="alert alert-danger mt-5">
+                    <p class="text-danger" role="button" data-toggle="collapse" data-target="#collapseExcludedOsc" aria-expanded="false" aria-controls="collapseExcludedOsc">
+                        There are problems with some OSCs and they are not included in any matching or other screens. Click here to expand the list.
+                    </p>
+                    <div class="collapse mt-2" id="collapseExcludedOsc">
+                        <ul>
+                            <li v-for="excludedOsc in excludedOnSiteCoordinators" :key="excludedOsc.id">
+                                <span>
+                                    {{`${excludedOsc.name} (Person ID: ${excludedOsc.id})`}}
+                                    <a :href="'/person/' + excludedOsc.id" target="_blank">[Go to Connect Profile]</a>
+                                </span>
+                                <ul>
+                                    <li v-if="excludedOsc.gender == Gender.Unknown">Missing Gender</li>
+                                    <li v-if="!excludedOsc.dayPreference">Missing Day Preferences</li>
+                                    <li v-if="!excludedOsc.timePreference">Missing Time Preferences</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-else class="alert alert-danger" role="alert">
+            Initial block configuration is not set properly. Please set all the required block basic settings and then reload the page.
+        </div>
+        <div>
+            <!-- Modal Dialog for Suggested OSC assign -->
+            <Modal
+                :onCloseModal="closeSuggestedOscAssignModal"
+                :saveText="isSuggestedOscAssignModalSaving ? 'Confirming' : 'Confirm'"
+                :onSave="onSeggestedOscAssignSaveClick"
+                :modelValue="isSuggestedOscAssignModalVisible"
+                title="Confirm Assignment"
+                :isSaveButtonDisabled="isSuggestedOscAssignModalSaving">
+                <div>
+                    <NotificationBox v-if="errorMessage" alertType="danger">{{ errorMessage }}</NotificationBox>
+                    <NotificationBox v-if="oscAssignWarnings && oscAssignWarnings.length" alertType="warning"><p v-for="(warning, index) in oscAssignWarnings" :key="index">{{ warning }}</p></NotificationBox>
+                    <p class="text-center">You are about to assign a person to a project. Please confirm this below.</p>
+                    <h2 class="text-center">{{suggestedOscModalProjectSelected?.suggestedOscName}}</h2>
+                    <p class="text-center mt-4">will be assigned to</p>
+                    <h2 class="text-center">{{suggestedOscModalProjectSelected?.name}}!</h2>
+                </div>
+            </Modal>
+            <!-- Modal Dialog for Regular OSC assign -->
+            <Modal
+                :onCloseModal="closeRegularOscAssignModal"
+                :saveText="isRegularOscAssignModalSaving ? 'Confirming' : 'Confirm'"
+                :onSave="onRegularOscAssignSaveClick"
+                :modelValue="isRegularOscAssignModalVisible"
+                title="Confirm Assignment"
+                :isSaveButtonDisabled="isRegularOscAssignModalSaving">
+                <div>
+                    <NotificationBox v-if="errorMessage" alertType="danger">{{ errorMessage }}</NotificationBox>
+                    <NotificationBox v-if="oscAssignWarnings && oscAssignWarnings.length" alertType="warning"><p v-for="(warning, index) in oscAssignWarnings" :key="index">{{ warning }}</p></NotificationBox>
+                    <p class="text-center">You are about to assign a person to a project. Please confirm this below.</p>
+                    <h2 class="text-center">{{`${regularOscAssignModalPersonSelected?.name} (${regularOscAssignModalPersonSelected?.formattedMatchPercentage})`}}</h2>
+                    <p class="text-center mt-4">will be assigned to</p>
+                    <h2 class="text-center">{{selectedProject?.name}}!</h2>
+                </div>
+            </Modal>
+            <!-- Modal Dialog for OSC assigned projects details -->
+            <Modal
+                :onCloseModal="closeOscAssignedProjectsModal"
+                :cancelText="'Close'"
+                :modelValue="isOscAssignedProjectsModalVisible"
+                title="Assigned Projects">
+                <div>
+                    <div class="grid-obsidian grid-bordered grid-striped">
+                        <div class="grid-heading">
+                            <div class="grid-column-heading">
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Name</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Gender</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Location</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 20%;"><span class="grid-column-title stretched-link">Day</span></div>
+                                <div class="grid-column-header" style="flex: 1 1 10%;"><span class="grid-column-title stretched-link">Time</span></div>
+                            </div>
+                        </div>
+                        <div class="grid-body">
+                            <div style="height: 0px;"></div>
+                            <div class="grid-row grid-row-odd" v-for="selectedOscProject in selectedOscProjects" :key="selectedOscProject.id">
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    {{selectedOscProject.name}}
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span :class="getGenderClassForOscAssignedProjects(selectedOscProject.gender)">
+                                        {{selectedOscProject.gender != Gender.Unknown ? selectedOscProject.genderString : 'Not Specified'}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <span :class="getLocationClassForOscAssignedProjects(selectedOscProject.location)">
+                                        {{selectedOscProject.location ?? 'Not Provided'}}
+                                    </span>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 20%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Monday', selectedOscProject?.day)">M</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Tuesday', selectedOscProject?.day)">T</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Wednesday', selectedOscProject?.day)">W</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Thursday', selectedOscProject?.day)">T</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Friday', selectedOscProject?.day)">F</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Saturday', selectedOscProject?.day)">S</span>
+                                        <span :class="getDayMatchClassForOscAssignedProjects('Sunday', selectedOscProject?.day)">S</span>
+                                    </div>
+                                </div>
+                                <div class="grid-cell" role="gridcell" style="flex: 1 1 10%;">
+                                    <div class="d-flex flex-column flex-lg-row">
+                                        <span v-html="getTimeOfDayIcon('Morning')" :class="getTimeMatchClassForOscAssignedProjects('Morning', selectedOscProject?.timeOfDay)" data-toggle="tooltip" title="Morning Session: 8am - 12pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Afternoon')" :class="getTimeMatchClassForOscAssignedProjects('Afternoon', selectedOscProject?.timeOfDay)" data-toggle="tooltip" title="Afternoon Session: 12pm - 4pm"></span>
+                                        <span v-html="getTimeOfDayIcon('Evening')" :class="getTimeMatchClassForOscAssignedProjects('Evening', selectedOscProject?.timeOfDay)" data-toggle="tooltip" title="Evening Session: 4pm - 9pm"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="height: 0px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+        </div>
+    </Block>
+</template>
+
+<style scoped>
+.match-item {
+    border: 2px solid;
+    border-radius: 16px;
+    padding: 0 8px;
+    align-items: center;
+    cursor: default;
+    line-height: 20px;
+    outline: none;
+    text-decoration: none;
+    vertical-align: middle;
+    white-space: nowrap;
+    background: none;
+    border-color: #d3d3d3;
+    color: #d3d3d3;
+}
+.match-item.match {
+    background: green;
+    color: #fff;
+    border-color: green;
+}
+.day-time-container {
+    height: 24px;
+    width: 24px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 12px;
+    border: 2px solid;
+    margin: 3px;
+    color: #d3d3d3;
+    border-color: #d3d3d3;
+    cursor: default;
+}
+.day-time-container.match {
+    color: green;
+    border-color: #90ee90;
+    background: #90ee90;
+}
+.day-time-container.exact-match {
+    color: #fff;
+    border-color: green;
+    background: green;
+}
+.day-time-container.time {
+    line-height: inherit;
+}
+</style>
+
+<script setup lang="ts">
+import { ref, reactive } from "vue";
+import { useConfigurationValues, useInvokeBlockAction } from "@Obsidian/Utility/block";
+import { InitializationBox } from "./initializationBox";
+import { ProjectResponseBag } from "./projectResponseBag";
+import { OnSiteCoordinatorResponseBag } from "./onSiteCoordinatorResponseBag";
+import { GridDataBag } from "@Obsidian/ViewModels/Core/Grid/gridDataBag";
+import { Gender } from "@Obsidian/Enums/Crm/gender";
+import Block from "@Obsidian/Templates/block";
+import RockButton from "@Obsidian/Controls/rockButton.obs";
+import Grid, { TextColumn, Column } from "@Obsidian/Controls/grid";
+import LoadingIndicator from "@Obsidian/Controls/loadingIndicator.obs";
+import NotificationBox from "@Obsidian/Controls/notificationBox.obs";
+import Modal from "@Obsidian/Controls/modal.obs";
+
+const config = useConfigurationValues<InitializationBox>();
+const invokeBlockAction = useInvokeBlockAction();
+
+// #region Values
+
+const errorMessage = ref<string>("");
+let projectsGridData: GridDataBag | undefined;
+let unasignedProjects: ProjectResponseBag[] = [];
+let asignedProjects: ProjectResponseBag[] = [];
+let onSiteCoordinators: OnSiteCoordinatorResponseBag[] = [];
+let onSiteCoordinatorsGridData: GridDataBag | undefined;
+const assignedProjectsGridDataSource = ref<Promise<GridDataBag>>();
+const unassignedProjectsGridDataSource = ref<Promise<GridDataBag>>();
+const unnasignedProjectsSelected = ref<boolean>(true);
+const selectedProject = ref<ProjectResponseBag | null>(null);
+const oscsGridDataSource = ref<Promise<GridDataBag>>();
+const runningOptimizations = ref<boolean>(false);
+const isSuggestedOscAssignModalVisible = ref(false);
+const isSuggestedOscAssignModalSaving = ref(false);
+const suggestedOscModalProjectSelected = ref<ProjectResponseBag | null>();
+const selectedOsc = ref<OnSiteCoordinatorResponseBag | null>(null);
+const isRegularOscAssignModalVisible = ref(false);
+const isRegularOscAssignModalSaving = ref(false);
+const regularOscAssignModalPersonSelected = ref<OnSiteCoordinatorResponseBag | null>();
+const selectedOscProjects = ref<ProjectResponseBag[]>();
+const selectedOscForProjects = ref<OnSiteCoordinatorResponseBag | null>();
+const isOscAssignedProjectsModalVisible = ref(false);
+const excludedOnSiteCoordinators = ref<OnSiteCoordinatorResponseBag[]>([]);
+const oscAssignWarnings = ref<string[]>([]);
+
+// #endregion
+
+// #region Event Handlers
+
+async function loadProjectsGridData(assigned: boolean | null): Promise<GridDataBag> {
+    const result = await invokeBlockAction<GridDataBag>("GetProjectsRowData", { assigned });
+
+    if (result.isSuccess && result.data) {
+        if (assigned === true) {
+            asignedProjects = result.data.rows as ProjectResponseBag[];
+        }
+        else if (assigned === false){
+            unasignedProjects = result.data.rows as ProjectResponseBag[];
+        }
+        projectsGridData = reactive(result.data);
+        return projectsGridData;
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to load projects grid data.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function loadOnSiteCoordinatorsGridData(projectId: string): Promise<GridDataBag> {
+    const result = await invokeBlockAction<GridDataBag>("GetOnSiteCoordinatorsRowData", { projectId });
+
+    if (result.isSuccess && result.data) {
+        onSiteCoordinators = result.data.rows as OnSiteCoordinatorResponseBag[];
+        onSiteCoordinatorsGridData = reactive(result.data);
+        return onSiteCoordinatorsGridData;
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to load OSCs grid data.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function getExcludedOnSiteCoordinators(): Promise<OnSiteCoordinatorResponseBag[]> {
+    const result = await invokeBlockAction<OnSiteCoordinatorResponseBag[]>("GetExcludedOnSiteCoordinators");
+
+    if (result.isSuccess && result.data) {
+        excludedOnSiteCoordinators.value = result.data;
+        return reactive(result.data);
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to get excluded OSCs.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function getSelectedOnSiteCoordinator(projectId: number, personId: number): Promise<OnSiteCoordinatorResponseBag> {
+    const result = await invokeBlockAction<OnSiteCoordinatorResponseBag>("GetSelectedOnSiteCoordinator", { projectId, personId });
+
+    if (result.isSuccess && result.data) {
+        selectedOsc.value = result.data;
+        return reactive(result.data);
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to get selected OSC.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+    
+}
+
+async function runOptimizations(): Promise<GridDataBag> {
+    runningOptimizations.value = true;
+    const result = await invokeBlockAction<GridDataBag>("RunOptimizations");
+
+    if (result.isSuccess && result.data) {
+        unasignedProjects = result.data.rows as ProjectResponseBag[];
+        projectsGridData = reactive(result.data);
+        runningOptimizations.value = false;
+        return projectsGridData;
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to run optimizations.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function assignOnSiteCoordinator(projectId: number, oscId: number): Promise<void> {
+    const result = await invokeBlockAction("AssignOnSiteCoordinator", { projectId, oscId });
+
+    if (result.isSuccess) {
+        return;
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to assign OSC to project.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function validateAssignOnSiteCoordinator(projectId: number, oscId: number): Promise<string[]> {
+    const result = await invokeBlockAction<string[]>("ValidateAssignOnSiteCoordinator", { projectId, oscId });
+
+    if (result.isSuccess && result.data) {
+        oscAssignWarnings.value = result.data;
+        return result.data;
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to validate assign OSC to project.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+async function getOnSiteCoordinatorProjects(personId: number): Promise<ProjectResponseBag[]> {
+    const result = await invokeBlockAction<ProjectResponseBag[]>("GetOnSiteCoordinatorProjects", { personId });
+
+    if (result.isSuccess && result.data) {
+        selectedOscProjects.value = result.data;
+        return reactive(result.data);
+    }
+    else {
+        const errorMessage = result.errorMessage ?? "Unknown error while trying to get OSC projects.";
+        setErrorMessage(errorMessage);
+        throw new Error(errorMessage);
+    }
+}
+
+function onRunOptimizationsClick(): void {
+    unassignedProjectsGridDataSource.value = runOptimizations();
+}
+
+function onProjectEditClick(key: string): void {
+    if (unnasignedProjectsSelected.value) {
+        oscsGridDataSource.value = loadOnSiteCoordinatorsGridData(key);
+        selectedProject.value = unasignedProjects.find(p => String(p.id) == key) ?? null;
+        setTooltips();
+    }
+    else {
+        selectedProject.value = asignedProjects.find(p => String(p.id) == key) ?? null;
+        if (selectedProject.value && selectedProject.value.selectedOscId) {   
+            getSelectedOnSiteCoordinator(selectedProject.value.id, selectedProject.value.selectedOscId)
+                .then(() => {
+                    setTooltips();
+                });
+        }
+    }
+}
+
+function onSuggestedOscAssignClick(key: number): void {
+    oscAssignWarnings.value = [];
+    const project = unasignedProjects.find(p => p.id == key && p.suggestedOscId);
+    if (project) {
+        project.id && project.suggestedOscId && validateAssignOnSiteCoordinator(project.id, project.suggestedOscId);
+        suggestedOscModalProjectSelected.value = project;
+        isSuggestedOscAssignModalVisible.value = true;
+    }
+}
+
+function onSeggestedOscAssignSaveClick(): void {
+    isSuggestedOscAssignModalSaving.value = true;
+    if (suggestedOscModalProjectSelected.value && suggestedOscModalProjectSelected.value.suggestedOscId) {
+        assignOnSiteCoordinator(suggestedOscModalProjectSelected.value.id, suggestedOscModalProjectSelected.value.suggestedOscId)
+            .then(() => {
+                isSuggestedOscAssignModalVisible.value = false;
+                unnasignedProjectsSelected.value = false;
+                if (suggestedOscModalProjectSelected.value && suggestedOscModalProjectSelected.value.suggestedOscId) {
+                    getSelectedOnSiteCoordinator(suggestedOscModalProjectSelected.value.id, suggestedOscModalProjectSelected.value.suggestedOscId)
+                        .then(() => {
+                            setTooltips();
+                        });
+                }
+                assignedProjectsGridDataSource.value = loadProjectsGridData(true);
+                unassignedProjectsGridDataSource.value = loadProjectsGridData(false);
+            })
+            .finally(() => {
+                isSuggestedOscAssignModalSaving.value = false;
+            });
+    }
+    else {
+        isSuggestedOscAssignModalVisible.value = false;
+    }
+}
+
+function onRegularOscAssignClick(key: number): void {
+    oscAssignWarnings.value = [];
+    const osc = onSiteCoordinators.find(p => p.id == key);
+    if (osc) {
+        selectedProject.value?.id && osc.id && validateAssignOnSiteCoordinator(selectedProject.value.id, osc.id);
+        regularOscAssignModalPersonSelected.value = osc;
+        isRegularOscAssignModalVisible.value = true;
+    }
+}
+
+function onRegularOscAssignSaveClick(): void {
+    isRegularOscAssignModalSaving.value = true;
+    if (selectedProject.value && regularOscAssignModalPersonSelected.value) {
+        assignOnSiteCoordinator(selectedProject.value.id, regularOscAssignModalPersonSelected.value.id)
+            .then(() => {
+                isRegularOscAssignModalVisible.value = false;
+                unnasignedProjectsSelected.value = false;
+                if (selectedProject.value && regularOscAssignModalPersonSelected.value) {
+                    getSelectedOnSiteCoordinator(selectedProject.value.id, regularOscAssignModalPersonSelected.value.id)
+                        .then(() => {
+                            setTooltips();
+                        });
+                }
+                assignedProjectsGridDataSource.value = loadProjectsGridData(true);
+                unassignedProjectsGridDataSource.value = loadProjectsGridData(false);
+            })
+            .finally(() => {
+                isRegularOscAssignModalSaving.value = false;
+            });
+    }
+    else {
+        isRegularOscAssignModalVisible.value = false;
+    }
+}
+
+function selectUnassignedProjects(): void {
+    unnasignedProjectsSelected.value = true;
+}
+
+function selectAssignedProjects(): void {
+    if (assignedProjectsGridDataSource.value === undefined) {
+        assignedProjectsGridDataSource.value = loadProjectsGridData(true);
+    }
+    unnasignedProjectsSelected.value = false;
+}
+
+function onOscProjectsClick(key: number, currentProjects: number): void {
+    if (currentProjects) {
+        selectedOscForProjects.value = onSiteCoordinators.find(p => p.id == key) ?? null;
+        getOnSiteCoordinatorProjects(key)
+            .then(() => {
+                isOscAssignedProjectsModalVisible.value = true;
+                setTooltips();
+            });
+    }
+}
+
+function onGoBackClick(): void {
+    selectedProject.value = null;
+    selectedOsc.value = null;
+}
+
+const closeSuggestedOscAssignModal = (): void => {
+    isSuggestedOscAssignModalVisible.value = false;
+    unnasignedProjectsSelected.value = true;
+    selectedProject.value = null;
+    selectedOsc.value = null;
+};
+
+const closeRegularOscAssignModal = (): void => {
+    isRegularOscAssignModalVisible.value = false;
+};
+
+const closeOscAssignedProjectsModal = (): void => {
+    isOscAssignedProjectsModalVisible.value = false;
+};
+
+function getDayMatchClass(days: string[] | null | undefined, day: string, projectDay: string | null | undefined): string {
+    if (days && day && projectDay && days.some(x => x.toLowerCase() == day.toLowerCase() && x.toLowerCase() == projectDay.toLowerCase())) {
+        return `day-time-container exact-match {}`;
+    }
+    else if (days && day && days.some(x => x.toLowerCase() == day.toLowerCase())) {
+        return `day-time-container match {}`;
+    }
+    else {
+        return `day-time-container`;
+    }
+}
+
+function getTimeMatchClass(times: string[] | null | undefined, time: string, projectTimes: string[] | null | undefined): string {
+    if (times && time && projectTimes && times.some(x => x.toLowerCase() == time.toLowerCase() && projectTimes.some(y => y.toLowerCase() == x.toLowerCase()))) {
+        return `day-time-container time exact-match {}`;
+    }
+    else if (times && time && times.some(x => x.toLowerCase() == time.toLowerCase())) {
+        return `day-time-container time match {}`;
+    }
+    else {
+        return `day-time-container time`;
+    }
+}
+
+function getTimeOfDayIcon(time: string): string {
+    switch (time) {
+        case "Morning":
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sunrise" viewBox="0 0 16 16"><path d="M7.646 1.146a.5.5 0 0 1 .708 0l1.5 1.5a.5.5 0 0 1-.708.708L8.5 2.707V4.5a.5.5 0 0 1-1 0V2.707l-.646.647a.5.5 0 1 1-.708-.708zM2.343 4.343a.5.5 0 0 1 .707 0l1.414 1.414a.5.5 0 0 1-.707.707L2.343 5.05a.5.5 0 0 1 0-.707m11.314 0a.5.5 0 0 1 0 .707l-1.414 1.414a.5.5 0 1 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0M8 7a3 3 0 0 1 2.599 4.5H5.4A3 3 0 0 1 8 7m3.71 4.5a4 4 0 1 0-7.418 0H.499a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1h-3.79zM0 10a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2A.5.5 0 0 1 0 10m13 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/></svg>`;
+        case "Afternoon":
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sun" viewBox="0 0 16 16"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/></svg>`;
+        case "Evening":
+            return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sunset" viewBox="0 0 16 16"><path d="M7.646 4.854a.5.5 0 0 0 .708 0l1.5-1.5a.5.5 0 0 0-.708-.708l-.646.647V1.5a.5.5 0 0 0-1 0v1.793l-.646-.647a.5.5 0 1 0-.708.708zm-5.303-.51a.5.5 0 0 1 .707 0l1.414 1.413a.5.5 0 0 1-.707.707L2.343 5.05a.5.5 0 0 1 0-.707zm11.314 0a.5.5 0 0 1 0 .706l-1.414 1.414a.5.5 0 1 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zM8 7a3 3 0 0 1 2.599 4.5H5.4A3 3 0 0 1 8 7m3.71 4.5a4 4 0 1 0-7.418 0H.499a.5.5 0 0 0 0 1h15a.5.5 0 0 0 0-1h-3.79zM0 10a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2A.5.5 0 0 1 0 10m13 0a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5"/></svg>`;
+        default:
+            return "";
+    }
+}
+
+function getGenderClassForOscAssignedProjects(gender: Gender | undefined): string {
+    return "match-item" + (gender == Gender.Unknown || selectedOscForProjects.value?.gender == gender ? " match" : "");
+}
+
+function getLocationClassForOscAssignedProjects(location: string | null | undefined): string {
+    return "match-item" + (!location || selectedOscForProjects.value?.location == location ? " match" : "");
+}
+
+function getDayMatchClassForOscAssignedProjects(time: string, projectDay: string | null | undefined): string {
+    return getDayMatchClass(selectedOscForProjects.value?.dayPreference, time, projectDay);
+}
+
+function getTimeMatchClassForOscAssignedProjects(time: string, projectTimes: string[] | null | undefined): string {
+    return getTimeMatchClass(selectedOscForProjects.value?.timePreference, time, projectTimes);
+}
+
+function setErrorMessage(message: string): void {
+    errorMessage.value = message;
+    setTimeout(() => {
+        if (errorMessage) {
+            errorMessage.value = "";
+        }
+    }, 10000);
+}
+
+function setTooltips()
+{
+    setTimeout(() => {
+        var $ = window["$"];
+        $('[data-toggle="tooltip"]').tooltip();
+    }, 300);
+}
+
+// #endregion
+
+unassignedProjectsGridDataSource.value = loadProjectsGridData(false);
+getExcludedOnSiteCoordinators();
+</script>

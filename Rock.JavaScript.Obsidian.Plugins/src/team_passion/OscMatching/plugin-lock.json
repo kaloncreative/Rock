@@ -1,0 +1,13 @@
+{
+  "lockFileVersion": 1,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "installedFiles": [
+        "Bin/Team.Passion.OscMatching.dll",
+        "Plugins/team_passion/OscMatching/matchingTool.obs.js"
+      ],
+      "deletedFiles": []
+    }
+  ]
+}
